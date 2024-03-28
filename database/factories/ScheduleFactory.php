@@ -24,8 +24,8 @@ class ScheduleFactory extends Factory
     public function fixedSchedule()
     {
         return $this->state([
-            'start_time' => '2024-03-28 00:00:00',
-            'end_time' => '2024-03-28 02:00:00',
+            'start_time' => '2022-12-30 14:00:00',
+            'end_time' => '2022-12-30 14:05:00',
         ]);
     }
 }

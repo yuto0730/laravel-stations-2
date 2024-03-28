@@ -23,26 +23,64 @@ class MovieScheduleController extends Controller
     {
         return view('admin.movies.schedules.create', compact('movie'));
     }
+
     public function store(Request $request, Movie $movie)
-    {
-        $request->validate([
-            'movie_id' => 'required|exists:movies,id',
-            'start_time_date' => 'required|date_format:Y-m-d',
-            'start_time_time' => 'required|date_format:H:i',
-            'end_time_date' => 'required|date_format:Y-m-d|after_or_equal:start_time_date',
-            'end_time_time' => 'required|date_format:H:i|after:start_time_time',
-        ]);
+{
+    $request->validate([
+        'movie_id' => 'required|exists:movies,id',
+        'start_time_date' => 'required|date_format:Y-m-d',
+        'start_time_time' => 'required|date_format:H:i',
+        'end_time_date' => 'required|date_format:Y-m-d|after_or_equal:start_time_date',
+        'end_time_time' => 'required|date_format:H:i|after:start_time_time',
+    ]);
 
-        $start_time = $request->input('start_time_date') . ' ' . $request->input('start_time_time') . ':00';
-        $end_time = $request->input('end_time_date') . ' ' . $request->input('end_time_time') . ':00';
+    $startTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('start_time_date') . ' ' . $request->input('start_time_time'));
+    $endTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('end_time_date') . ' ' . $request->input('end_time_time'));
 
-        $movie->schedules()->create([
-            'start_time' => $start_time,
-            'end_time' => $end_time,
-        ]);
-
-        return redirect()->route('admin.movies.schedules.index', ['movie' => $movie->id]);
+    if ($endTime->lte($startTime)) {
+        return redirect()->back()->withErrors(['start_time_time' => '開始時刻は終了時刻より前でなければなりません。']);
     }
+
+    if ($endTime->diffInMinutes($startTime) < 5) {
+        return redirect()->back()->withErrors(['end_time_time' => '終了時刻は開始時刻から5分以上後でなければなりません。']);
+    }
+
+    $movie->schedules()->create([
+        'start_time' => $startTime->format('Y-m-d H:i:s'),
+        'end_time' => $endTime->format('Y-m-d H:i:s'),
+    ]);
+
+    return redirect()->route('admin.movies.schedules.index', ['movie' => $movie->id]);
+}
+
+public function update(Request $request, Schedule $schedule)
+{
+    $request->validate([
+        'movie_id' => 'required|exists:movies,id',
+        'start_time_date' => 'required|date_format:Y-m-d',
+        'start_time_time' => 'required|date_format:H:i',
+        'end_time_date' => 'required|date_format:Y-m-d|after_or_equal:start_time_date',
+        'end_time_time' => 'required|date_format:H:i|after:start_time_time',
+    ]);
+
+    $startDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('start_time_date') . ' ' . $request->input('start_time_time'));
+    $endDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('end_time_date') . ' ' . $request->input('end_time_time'));
+
+    if ($endDateTime->lessThanOrEqualTo($startDateTime) || $endDateTime->diffInMinutes($startDateTime) < 5) {
+        return redirect()->back()->withErrors([
+            'start_time_time' => '開始時刻は終了時刻より前でなければなりません。',
+            'end_time_time' => '終了時刻は開始時刻から5分以上後でなければなりません。'
+        ]);
+    }
+
+    $schedule->update([
+        'start_time' => $startDateTime->format('Y-m-d H:i:s'),
+        'end_time' => $endDateTime->format('Y-m-d H:i:s'),
+    ]);
+
+    return redirect()->route('admin.movies.schedules.index', ['movie' => $schedule->movie_id]);
+}
+
     public function edit($scheduleId)
     {
         $schedule = Schedule::findOrFail($scheduleId);
@@ -52,27 +90,6 @@ class MovieScheduleController extends Controller
         // ビューに必要なデータを渡す
         return view('admin.schedules.edit', compact('schedule', 'movie', 'genres'));
     }
-    public function update(Request $request, Schedule $schedule)
-    {
-        $request->validate([
-            'movie_id' => 'required|exists:movies,id',
-            'start_time_date' => 'required|date_format:Y-m-d',
-            'start_time_time' => 'required|date_format:H:i',
-            'end_time_date' => 'required|date_format:Y-m-d|after_or_equal:start_time_date',
-            'end_time_time' => 'required|date_format:H:i|after:start_time_time',
-        ]);
-
-        $startDateTime = new CarbonImmutable($request->input('start_time_date') . ' ' . $request->input('start_time_time'));
-        $endDateTime = new CarbonImmutable($request->input('end_time_date') . ' ' . $request->input('end_time_time'));
-
-        $schedule->update([
-            'start_time' => $startDateTime->format('Y-m-d H:i:s'),
-            'end_time' => $endDateTime->format('Y-m-d H:i:s'),
-        ]);
-
-        return redirect()->route('admin.movies.schedules.index', ['movie' => $schedule->movie_id]);
-    }
-
 
     public function destroy($scheduleId)
 {
