@@ -3,22 +3,30 @@
 namespace Database\Factories;
 
 use App\Models\Movie;
-use Carbon\CarbonImmutable;
+use App\Models\Schedule;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ScheduleFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array
-     */
+    protected $model = Schedule::class;
+
     public function definition()
     {
         return [
-            'movie_id' => Movie::factory(),
-            'start_time' => CarbonImmutable::now(),
-            'end_time' => CarbonImmutable::now()->addHours(2),
+            'movie_id' => function () {
+                return Movie::factory()->create()->id;
+            },
+            'start_time' => $this->faker->dateTime(),
+            'end_time' => $this->faker->dateTime(),
         ];
     }
+
+    public function fixedSchedule()
+    {
+        return $this->state([
+            'start_time' => '2024-03-28 00:00:00',
+            'end_time' => '2024-03-28 02:00:00',
+        ]);
+    }
 }
+

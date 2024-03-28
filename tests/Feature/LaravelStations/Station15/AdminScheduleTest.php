@@ -135,29 +135,29 @@ class AdminScheduleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test管理者映画スケジュール編集画面で映画スケジュールが更新されるか(): void
-    {
-        $movieId = $this->createMovie('タイトル')->id;
-        $startTime = new CarbonImmutable('2022-01-01 00:00:00');
-        $endTime = new CarbonImmutable('2022-01-01 02:00:00');
-        $scheduleId = Schedule::insertGetId([
-            'movie_id' => $movieId,
-            'start_time' => $startTime,
-            'end_time' => $endTime,
-        ]);
-        $response = $this->patch('/admin/schedules/' . $scheduleId . '/update', [
-            'movie_id' => $movieId,
-            'start_time_date' => $startTime->addHours(2)->format('Y-m-d'),
-            'start_time_time' => $startTime->addHours(2)->format('H:i'),
-            'end_time_date' => $endTime->addHours(2)->format('Y-m-d'),
-            'end_time_time' => $endTime->addHours(2)->format('H:i'),
-        ]);
-        $response->assertStatus(302);
-        $updated = Schedule::find($scheduleId);
-        $this->assertEquals($updated->start_time, $startTime->addHours(2));
-        $this->assertEquals($updated->end_time, $endTime->addHours(2));
-    }
 
+public function test管理者映画スケジュール編集画面で映画スケジュールが更新されるか(): void
+{
+    $movieId = $this->createMovie('タイトル')->id;
+    $startTime = new CarbonImmutable('2022-01-01 00:00:00');
+    $endTime = new CarbonImmutable('2022-01-01 02:00:00');
+    $scheduleId = Schedule::insertGetId([
+        'movie_id' => $movieId,
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+    ]);
+    $response = $this->patch('/admin/schedules/' . $scheduleId . '/update', [
+        'movie_id' => $movieId,
+        'start_time_date' => $startTime->addHours(2)->format('Y-m-d'),
+        'start_time_time' => $startTime->addHours(2)->format('H:i'),
+        'end_time_date' => $endTime->addHours(2)->format('Y-m-d'),
+        'end_time_time' => $endTime->addHours(2)->format('H:i'),
+    ]);
+    $response->assertStatus(302);
+    $updated = Schedule::find($scheduleId);
+    $this->assertEquals($updated->start_time, $startTime->addHours(2));
+    $this->assertEquals($updated->end_time, $endTime->addHours(2));
+}
     public function test更新時Requiredバリデーションが設定されているか(): void
     {
         $movieId = $this->createMovie('タイトル')->id;

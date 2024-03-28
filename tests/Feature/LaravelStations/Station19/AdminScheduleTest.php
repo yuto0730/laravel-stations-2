@@ -175,6 +175,7 @@ class AdminScheduleTest extends TestCase
         $this->assertEquals($updated->end_time, $endTime->addHours(2));
     }
 
+
     public function test更新時Requiredバリデーションが設定されているか(): void
     {
         $movieId = $this->createMovie('タイトル')->id;
