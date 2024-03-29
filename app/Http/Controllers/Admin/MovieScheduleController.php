@@ -1,16 +1,12 @@
 <?php
 
-// MovieScheduleController.php
-
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Movie;
-use App\Models\Genre;
 use App\Models\Schedule;
 use Illuminate\Http\Request;
 use Carbon\CarbonImmutable;
-
 
 class MovieScheduleController extends Controller
 {
@@ -19,89 +15,113 @@ class MovieScheduleController extends Controller
         $schedules = $movie->schedules()->get();
         return view('admin.movies.schedules.index', compact('movie', 'schedules'));
     }
+
     public function create(Movie $movie)
     {
         return view('admin.movies.schedules.create', compact('movie'));
     }
-
     public function store(Request $request, Movie $movie)
-{
-    $request->validate([
-        'movie_id' => 'required|exists:movies,id',
-        'start_time_date' => 'required|date_format:Y-m-d',
-        'start_time_time' => 'required|date_format:H:i',
-        'end_time_date' => 'required|date_format:Y-m-d|after_or_equal:start_time_date',
-        'end_time_time' => 'required|date_format:H:i|after:start_time_time',
-    ]);
+    {
+        $this->validateSchedule($request);
 
-    $startTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('start_time_date') . ' ' . $request->input('start_time_time'));
-    $endTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('end_time_date') . ' ' . $request->input('end_time_time'));
+        $startTime = $this->getDateTimeFromRequest($request, 'start_time_date', 'start_time_time');
+        $endTime = $this->getDateTimeFromRequest($request, 'end_time_date', 'end_time_time');
 
-    if ($endTime->lte($startTime)) {
-        return redirect()->back()->withErrors(['start_time_time' => '開始時刻は終了時刻より前でなければなりません。']);
+        // 日付と時刻のバリデーション
+        $errors = [];
+        if ($startTime->gt($endTime)) {
+            $errors['start_time_date'] = '開始日付は終了日付より前でなければなりません。';
+            $errors['end_time_date'] = '終了日付は開始日付より後でなければなりません。';
+            $errors['start_time_time'] = '開始時刻は終了時刻より前でなければなりません。';
+            $errors['end_time_time'] = '終了時刻は開始時刻よりも後でなければなりません。';
+        }
+
+        if ($endTime->diffInMinutes($startTime) < 5) {
+            $errors['start_time_time'] = '開始時刻と終了時刻の差は5分以上必要です。';
+            $errors['end_time_time'] = '終了時刻は開始時刻から5分以上後でなければなりません。';
+        }
+
+        if (!empty($errors)) {
+            return redirect()->back()->withErrors($errors);
+        }
+
+        $movie->schedules()->create([
+            'start_time' => $startTime->format('Y-m-d H:i:s'),
+            'end_time' => $endTime->format('Y-m-d H:i:s')
+        ]);
+
+        return redirect()->route('admin.movies.schedules.index', ['movie' => $movie->id]);
     }
 
-    if ($endTime->diffInMinutes($startTime) < 5) {
-        return redirect()->back()->withErrors(['end_time_time' => '終了時刻は開始時刻から5分以上後でなければなりません。']);
+    public function update(Request $request, $id)
+    {
+        $schedule = Schedule::findOrFail($id);
+        $this->validateSchedule($request);
+
+        $startTime = $this->getDateTimeFromRequest($request, 'start_time_date', 'start_time_time');
+        $endTime = $this->getDateTimeFromRequest($request, 'end_time_date', 'end_time_time');
+
+        // 日付と時刻のバリデーション
+        $errors = [];
+        if ($startTime->gt($endTime)) {
+            $errors['start_time_date'] = '開始日付は終了日付より前でなければなりません。';
+            $errors['end_time_date'] = '終了日付は開始日付より後でなければなりません。';
+            $errors['start_time_time'] = '開始時刻は終了時刻より前でなければなりません。';
+            $errors['end_time_time'] = '終了時刻は開始時刻よりも後でなければなりません。';
+        }
+
+        if ($endTime->diffInMinutes($startTime) < 5) {
+            $errors['start_time_time'] = '開始時刻と終了時刻の差は5分以上必要です。';
+            $errors['end_time_time'] = '終了時刻は開始時刻から5分以上後でなければなりません。';
+        }
+
+        if (!empty($errors)) {
+            return redirect()->back()->withErrors($errors);
+        }
+
+        $schedule->update([
+            'start_time' => $startTime->format('Y-m-d H:i:s'),
+            'end_time' => $endTime->format('Y-m-d H:i:s')
+        ]);
+
+        return redirect()->route('admin.movies.schedules.index', ['movie' => $schedule->movie_id]);
     }
 
-    $movie->schedules()->create([
-        'start_time' => $startTime->format('Y-m-d H:i:s'),
-        'end_time' => $endTime->format('Y-m-d H:i:s'),
-    ]);
 
-    return redirect()->route('admin.movies.schedules.index', ['movie' => $movie->id]);
-}
 
-public function update(Request $request, Schedule $schedule)
-{
-    $request->validate([
-        'movie_id' => 'required|exists:movies,id',
-        'start_time_date' => 'required|date_format:Y-m-d',
-        'start_time_time' => 'required|date_format:H:i',
-        'end_time_date' => 'required|date_format:Y-m-d|after_or_equal:start_time_date',
-        'end_time_time' => 'required|date_format:H:i|after:start_time_time',
-    ]);
-
-    $startDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('start_time_date') . ' ' . $request->input('start_time_time'));
-    $endDateTime = CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input('end_time_date') . ' ' . $request->input('end_time_time'));
-
-    if ($endDateTime->lessThanOrEqualTo($startDateTime) || $endDateTime->diffInMinutes($startDateTime) < 5) {
-        return redirect()->back()->withErrors([
-            'start_time_time' => '開始時刻は終了時刻より前でなければなりません。',
-            'end_time_time' => '終了時刻は開始時刻から5分以上後でなければなりません。'
+    private function validateSchedule(Request $request)
+    {
+        $request->validate([
+            'movie_id' => 'required|exists:movies,id',
+            'start_time_date' => 'required|date_format:Y-m-d',
+            'start_time_time' => 'required|date_format:H:i',
+            'end_time_date' => 'required|date_format:Y-m-d',
+            'end_time_time' => 'required|date_format:H:i',
         ]);
     }
 
-    $schedule->update([
-        'start_time' => $startDateTime->format('Y-m-d H:i:s'),
-        'end_time' => $endDateTime->format('Y-m-d H:i:s'),
-    ]);
+    private function getDateTimeFromRequest(Request $request, $dateField, $timeField)
+    {
+        return CarbonImmutable::createFromFormat('Y-m-d H:i', $request->input($dateField) . ' ' . $request->input($timeField));
+    }
 
-    return redirect()->route('admin.movies.schedules.index', ['movie' => $schedule->movie_id]);
+    // The edit and destroy methods remain unchanged
+
+    // MovieScheduleController.php
+
+public function edit($id)
+{
+    $schedule = Schedule::findOrFail($id);
+    return view('admin.schedules.edit', compact('schedule'));
 }
 
-    public function edit($scheduleId)
-    {
-        $schedule = Schedule::findOrFail($scheduleId);
-        $movie = $schedule->movie;  // スケジュールに関連付けられた映画を取得
-        $genres = Genre::all();  // ジャンルのリストは映画情報の編集に必要かもしれません
-
-        // ビューに必要なデータを渡す
-        return view('admin.schedules.edit', compact('schedule', 'movie', 'genres'));
-    }
-
-    public function destroy($scheduleId)
+public function destroy($id)
 {
-    $schedule = Schedule::find($scheduleId);
-
-    if (!$schedule) {
-        abort(404); // スケジュールが見つからない場合は404エラーを返す
-    }
-
+    $schedule = Schedule::findOrFail($id);
     $movieId = $schedule->movie_id;
     $schedule->delete();
 
     return redirect()->route('admin.movies.schedules.index', ['movie' => $movieId]);
-        }
-    }
+}
+
+}

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Movie;
 use App\Models\Genre;
+use app\Models\Schedule;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -15,6 +16,8 @@ class DatabaseSeeder extends Seeder
             ScheduleSeeder::class,
 
         ]);
+        Schedule::factory()->startTimeAfterEndTime()->create();
+
 
         Genre::factory(5)->create();
 
