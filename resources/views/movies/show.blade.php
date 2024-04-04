@@ -16,7 +16,10 @@
     @else
         <ul>
             @foreach ($schedules as $schedule)
-                <li>{{ $schedule->start_time }} - {{ $schedule->end_time }}</li>
+                <li>
+                    {{ $schedule->start_time->format('Y-m-d H:i') }} - {{ $schedule->end_time->format('H:i') }}
+                    <a href="{{ url("/movies/{$movie->id}/schedules/{$schedule->id}/sheets") }}">座席を予約する</a>
+                </li>
             @endforeach
         </ul>
     @endif

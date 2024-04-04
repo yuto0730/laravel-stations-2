@@ -1,9 +1,11 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\Admin\AdminMovieController;
 use App\Http\Controllers\Admin\MovieScheduleController;
 use App\Http\Controllers\SheetController;
+use App\Http\Controllers\ReservationController; // この行を追加
 
 // 一般ユーザー向けのルーティング
 Route::get('/movies', [MovieController::class, 'index']);
@@ -26,3 +28,12 @@ Route::post('/admin/movies/{movie}/schedules/store', [MovieScheduleController::c
 Route::get('/admin/schedules/{schedule}/edit', [MovieScheduleController::class, 'edit'])->name('admin.movies.schedules.edit');
 Route::patch('/admin/schedules/{schedule}/update', [MovieScheduleController::class, 'update'])->name('admin.schedules.update');
 Route::delete('/admin/schedules/{schedule}/destroy', [MovieScheduleController::class, 'destroy'])->name('admin.schedules.destroy');
+
+// 予約関連のルーティング
+Route::get('/movies/{movie_id}/schedules/{schedule_id}/sheets', [SheetController::class, 'index']);
+Route::get('/movies/{movie_id}/schedules/{schedule_id}/reservations/create', [ReservationController::class, 'create']);
+Route::post('/reservations/store', [ReservationController::class, 'store']);
+
+// 以下のルーティングは重複しているので削除が必要かもしれません
+// Route::get('/movies/{movie_id}/schedules/{schedule_id}/sheets', 'SheetController@index')->name('sheets.index');
+// Route::get('/movies/{movie_id}/schedules/{schedule_id}/reservations/create', 'ReservationController@create')->name('reservations.create');
