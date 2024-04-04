@@ -13,14 +13,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             SheetsTableSeeder::class,
-            ScheduleSeeder::class,
+          //  ScheduleSeeder::class,
 
         ]);
-        Schedule::factory()->startTimeAfterEndTime()->create();
-
-
         Genre::factory(5)->create();
-
         Movie::factory(10)->create()->each(function ($movie) {
             $genre = Genre::inRandomOrder()->first();
             $movie->genre()->associate($genre);

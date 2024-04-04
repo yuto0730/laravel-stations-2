@@ -9,6 +9,7 @@ class ScheduleSeeder extends Seeder
 {
     public function run()
     {
-        Schedule::factory()->fixedSchedule()->create();
+        Schedule::factory()->fixedSchedule()->create(
+        );
     }
 }
